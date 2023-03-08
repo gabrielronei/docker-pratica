@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:5.7
+    command: --innodb-use-native-aio=0
+    container_name: db
+    restart: always
+    tty: true
+    init: true
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=nodezinho
+      - MYSQL_ROOT_PASSWORD=root
+    networks:
+      - rede_show
+    healthcheck:
+        test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-uroot", "-proot"]
+        interval: 5s
+        timeout: 5s
+        retries: 5
+
+  node:
+    image: gabrielronei/nodezinho
+    container_name: nodezinho_container
+    tty: true
+    init: true
+    networks:
+      - rede_show
+    depends_on:
+        db:
+          condition: service_healthy
+
+  nginx:
+    build: 
+      context: ./nginx
+    init: true
+    ports:
+      - "8080:80"
+    depends_on:
+      - node
+    networks:
+      - rede_show
+
+networks:
+  rede_show:
+    driver: bridge
